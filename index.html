@@ -352,6 +352,7 @@ body.light .toast{background:#fffdf8;color:#28323a;border-color:#d6cdbd}
   <button data-page="tasks"><span class="ico">☷</span><span class="nav-text">Задачи</span></button>
   <button data-page="calendar"><span class="ico">▦</span><span class="nav-text">Календарь</span></button>
   <button data-page="notes"><span class="ico">▤</span><span class="nav-text">Заметки</span></button>
+  <button data-page="account"><span class="ico">♙</span><span class="nav-text">Моё пространство</span></button>
  </nav></div>
  <div class="side-bottom"><div class="nav-label">Приложение</div><nav class="nav"><button data-page="settings"><span class="ico">⚙</span><span class="nav-text">Настройки</span></button></nav><div class="profile"><div class="avatar">B</div><div><b>Моё пространство</b><small>Локальный профиль</small></div></div></div>
 </aside>
@@ -407,6 +408,35 @@ body.light .toast{background:#fffdf8;color:#28323a;border-color:#d6cdbd}
   <div class="welcome"><div><div class="eyebrow">МЫСЛИ И ИДЕИ</div><h1>Заметки</h1><p>Твоя личная область для важных мыслей.</p></div></div>
   <div class="card"><div class="card-head"><h2>Мой блокнот</h2><span class="muted small-text">Автосохранение</span></div><textarea id="notesPage" class="field note-area" style="min-height:380px" placeholder="Начни писать…"></textarea><div class="note-status" id="notesStatus">Заметки сохраняются автоматически на этом устройстве.</div></div>
  </section>
+ <section class="page" id="page-account">
+  <div class="welcome"><div><div class="eyebrow">ЛИЧНЫЙ ПРОФИЛЬ</div><h1>Моё пространство</h1><p>Создай локальный аккаунт или войди в уже созданный на этом компьютере.</p></div></div>
+  <div id="accountGuest" class="settings-grid">
+   <div class="setting">
+    <h3>Регистрация</h3><p>Создай профиль, чтобы отделить свои задачи и заметки от других пользователей этого компьютера.</p>
+    <form id="registerForm">
+     <label class="label" for="registerName">Имя</label><input class="field" id="registerName" maxlength="50" required placeholder="Как тебя зовут">
+     <label class="label" for="registerLogin" style="margin-top:10px">Логин</label><input class="field" id="registerLogin" maxlength="30" required autocomplete="username" placeholder="Придумай логин">
+     <label class="label" for="registerPassword" style="margin-top:10px">Пароль</label><input class="field" id="registerPassword" type="password" minlength="6" required autocomplete="new-password" placeholder="Не менее 6 символов">
+     <label class="label" for="registerPassword2" style="margin-top:10px">Повтори пароль</label><input class="field" id="registerPassword2" type="password" minlength="6" required autocomplete="new-password" placeholder="Повтори пароль">
+     <button class="btn primary" type="submit" style="margin-top:14px">Создать аккаунт</button>
+    </form>
+   </div>
+   <div class="setting">
+    <h3>Вход</h3><p>Если аккаунт уже создан на этом компьютере, войди в него.</p>
+    <form id="loginForm">
+     <label class="label" for="loginLogin">Логин</label><input class="field" id="loginLogin" required autocomplete="username" placeholder="Твой логин">
+     <label class="label" for="loginPassword" style="margin-top:10px">Пароль</label><input class="field" id="loginPassword" type="password" required autocomplete="current-password" placeholder="Твой пароль">
+     <button class="btn" type="submit" style="margin-top:14px">Войти</button>
+    </form>
+   </div>
+  </div>
+  <div id="accountProfile" class="card" hidden>
+   <div class="card-head"><div><div class="eyebrow">ТВОЙ АККАУНТ</div><h2 id="profileName">Пользователь</h2><div class="muted small-text" id="profileLogin"></div></div><div class="avatar" id="profileAvatar">П</div></div>
+   <p class="muted">Твои задачи, заметки и настройки сохраняются отдельно от других локальных профилей.</p>
+   <button class="btn" id="logoutBtn">Выйти из аккаунта</button>
+  </div>
+  <p class="muted small-text" style="margin-top:14px">Важно: аккаунты и данные хранятся только в этом браузере на этом компьютере. Это локальные профили, а не облачная регистрация.</p>
+ </section>
  <section class="page" id="page-settings">
   <div class="welcome"><div><div class="eyebrow">ПЕРСОНАЛИЗАЦИЯ</div><h1>Настройки</h1><p>Управляй внешним видом и своими данными.</p></div></div>
   <div class="settings-grid">
@@ -428,7 +458,38 @@ if(!Array.isArray(data.tasks))data.tasks=[];
 if(!data.calendarNotes||typeof data.calendarNotes!=='object'||Array.isArray(data.calendarNotes))data.calendarNotes={};
 let selectedDate=iso(today);
 let visibleMonth=new Date(today.getFullYear(),today.getMonth(),1);
-const persist=()=>localStorage.setItem('barnoma.data',JSON.stringify(data));
+let activeUser=localStorage.getItem('barnoma.activeUser')||'';
+const persist=()=>localStorage.setItem(activeUser?'barnoma.userdata.'+activeUser:'barnoma.data',JSON.stringify(data));
+function loadUserData(userId){
+ try{const raw=JSON.parse(localStorage.getItem('barnoma.userdata.'+userId)||'null');data={tasks:[],notes:'',theme:'dark',calendarNotes:{},...(raw&&typeof raw==='object'?raw:{})}}catch{data={tasks:[],notes:'',theme:'dark',calendarNotes:{}}}
+ if(!Array.isArray(data.tasks))data.tasks=[];
+ if(!data.calendarNotes||typeof data.calendarNotes!=='object'||Array.isArray(data.calendarNotes))data.calendarNotes={};
+ $('#homeNote').value=data.notes||'';$('#notesPage').value=data.notes||'';
+ document.body.classList.toggle('light',data.theme==='light');
+}
+function getUsers(){try{const u=JSON.parse(localStorage.getItem('barnoma.users')||'[]');return Array.isArray(u)?u:[]}catch{return []}}
+function saveUsers(users){localStorage.setItem('barnoma.users',JSON.stringify(users))}
+async function passwordDigest(password,salt){
+ const enc=new TextEncoder(),key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);
+ const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:120000,hash:'SHA-256'},key,256);
+ return [...new Uint8Array(bits)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+function renderAccount(){
+ const user=getUsers().find(u=>u.id===activeUser);
+ $('#accountGuest').hidden=!!user;$('#accountProfile').hidden=!user;
+ const navProfile=$('.profile');if(navProfile){navProfile.querySelector('.avatar').textContent=user?(user.name.trim()[0]||'П').toUpperCase():'B';navProfile.querySelector('b').textContent=user?user.name:'Моё пространство';navProfile.querySelector('small').textContent=user?'Локальный аккаунт':'Гостевой режим';}
+ if(user){$('#profileName').textContent=user.name;$('#profileLogin').textContent='@'+user.login;$('#profileAvatar').textContent=(user.name.trim()[0]||'П').toUpperCase();}
+}
+async function registerLocalUser(name,login,password){
+ const users=getUsers(),normalized=login.trim().toLowerCase();
+ if(users.some(u=>u.login.toLowerCase()===normalized))throw new Error('Такой логин уже занят.');
+ const salt=crypto.getRandomValues(new Uint8Array(16));const saltText=[...salt].map(x=>x.toString(16).padStart(2,'0')).join('');
+ const hash=await passwordDigest(password,saltText),id='u_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+ users.push({id,name:name.trim(),login:normalized,salt:saltText,hash});saveUsers(users);
+ activeUser=id;localStorage.setItem('barnoma.activeUser',id);persist();renderAccount();toast('Аккаунт создан. Добро пожаловать!');
+}
+function switchToUser(user){activeUser=user.id;localStorage.setItem('barnoma.activeUser',activeUser);loadUserData(activeUser);render();renderAccount();go('home');toast('Вход выполнен');}
+function logoutLocalUser(){persist();activeUser='';localStorage.removeItem('barnoma.activeUser');try{const raw=JSON.parse(localStorage.getItem('barnoma.data')||'null');data={tasks:[],notes:'',theme:'dark',calendarNotes:{},...(raw&&typeof raw==='object'?raw:{})}}catch{data={tasks:[],notes:'',theme:'dark',calendarNotes:{}}}$('#homeNote').value=data.notes||'';$('#notesPage').value=data.notes||'';document.body.classList.toggle('light',data.theme==='light');render();renderAccount();go('account');toast('Ты вышел из аккаунта');}
 function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2600)}
 function dateText(d){if(!d)return 'Без срока';const x=new Date(d+'T12:00:00');return x.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}
 function taskNode(t){const row=document.createElement('div');row.className='task'+(t.done?' done':'');const cb=document.createElement('input');cb.type='checkbox';cb.checked=!!t.done;cb.setAttribute('aria-label','Отметить выполнение');cb.addEventListener('change',()=>{t.done=cb.checked;persist();render()});const main=document.createElement('div');main.className='task-main';const title=document.createElement('div');title.className='task-title';title.textContent=t.title;const meta=document.createElement('div');meta.className='task-meta';const p=document.createElement('span');p.innerHTML='<i class="priority p-'+(t.priority||'medium')+'"></i>'+({high:'Высокий',medium:'Средний',low:'Низкий'}[t.priority||'medium']);const cat=document.createElement('span');cat.textContent=t.category||'Личное';const due=document.createElement('span');due.textContent='◷ '+dateText(t.date);meta.append(p,cat,due);main.append(title,meta);const del=document.createElement('button');del.className='btn small subtle';del.textContent='×';del.title='Удалить задачу';del.addEventListener('click',()=>{if(confirm('Удалить эту задачу?')){data.tasks=data.tasks.filter(x=>x.id!==t.id);persist();render()}});row.append(cb,main,del);return row}
@@ -501,9 +562,22 @@ $('#taskForm').addEventListener('submit',e=>{e.preventDefault();addTask($('#newT
 function saveNotes(value,status){data.notes=value;persist();if(status)$(status).textContent='Сохранено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
 ['#homeNote','#notesPage'].forEach(s=>{const el=$(s);el.value=data.notes;let timer;el.addEventListener('input',()=>{clearTimeout(timer);const status=s==='#homeNote'?'#homeNoteStatus':'#notesStatus';$(status).textContent='Сохраняю…';timer=setTimeout(()=>{saveNotes(el.value,status);$('#homeNote').value=el.value;$('#notesPage').value=el.value},300)})});
 function setTheme(){document.body.classList.toggle('light',data.theme==='light');persist()}if(data.theme==='light')document.body.classList.add('light');function toggleTheme(){data.theme=data.theme==='light'?'dark':'light';setTheme();toast(data.theme==='light'?'Светлая тема включена':'Тёмная тема включена')}$('#themeBtn').addEventListener('click',toggleTheme);$('#themeSetting').addEventListener('click',toggleTheme);
-function go(page){$$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('#crumb').textContent=({home:'ГЛАВНАЯ',tasks:'ЗАДАЧИ',calendar:'КАЛЕНДАРЬ',notes:'ЗАМЕТКИ',settings:'НАСТРОЙКИ'})[page];window.scrollTo({top:0,behavior:'smooth'})}$$('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));$$('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
+function go(page){$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('#crumb').textContent=({home:'ГЛАВНАЯ',tasks:'ЗАДАЧИ',calendar:'КАЛЕНДАРЬ',notes:'ЗАМЕТКИ',account:'МОЁ ПРОСТРАНСТВО',settings:'НАСТРОЙКИ'})[page];if(page==='account')renderAccount();window.scrollTo({top:0,behavior:'smooth'})}$$('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));$$('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
 $('#exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='barnoma-backup-'+iso(today)+'.json';a.click();URL.revokeObjectURL(url);toast('Резервная копия скачана')});
 $('#importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const incoming=JSON.parse(await file.text());if(!incoming||!Array.isArray(incoming.tasks)||typeof incoming.notes!=='string')throw new Error('Формат файла не подходит');if(!confirm('Заменить текущие задачи и заметки данными из файла?'))return;data={...data,...incoming};persist();$('#homeNote').value=data.notes;$('#notesPage').value=data.notes;render();toast('Данные восстановлены')}catch(err){alert('Не удалось импортировать файл: '+err.message)}e.target.value=''});
+$('#registerForm').addEventListener('submit',async e=>{
+ e.preventDefault();const name=$('#registerName').value.trim(),login=$('#registerLogin').value.trim(),password=$('#registerPassword').value,password2=$('#registerPassword2').value;
+ if(password!==password2){alert('Пароли не совпадают.');return}
+ if(!/^[a-zA-Z0-9_.-]{3,30}$/.test(login)){alert('Логин: от 3 до 30 символов, только латинские буквы, цифры, точка, дефис и подчёркивание.');return}
+ try{await registerLocalUser(name,login,password);e.target.reset();go('home')}catch(err){alert(err.message||'Не удалось создать аккаунт.')}
+});
+$('#loginForm').addEventListener('submit',async e=>{
+ e.preventDefault();const login=$('#loginLogin').value.trim().toLowerCase(),password=$('#loginPassword').value;
+ const user=getUsers().find(u=>u.login.toLowerCase()===login);
+ if(!user){alert('Пользователь с таким логином не найден на этом компьютере.');return}
+ try{const hash=await passwordDigest(password,user.salt);if(hash!==user.hash){alert('Неверный пароль.');return}e.target.reset();switchToUser(user)}catch(err){alert('Не удалось выполнить вход: '+err.message)}
+});
+$('#logoutBtn').addEventListener('click',logoutLocalUser);
 $('#repoBtn').addEventListener('click',()=>window.open(repo,'_blank','noopener'));
 $('#updateBtn').addEventListener('click',async()=>{
  const b=$('#updateBtn');
@@ -540,4 +614,5 @@ $('#updateBtn').addEventListener('click',async()=>{
  }
 });
 render();
+renderAccount();
 </script></body></html>
