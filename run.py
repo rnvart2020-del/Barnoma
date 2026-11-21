@@ -13,6 +13,8 @@ import time
 import urllib.request
 import urllib.error
 import zipfile
+import ctypes
+from ctypes import wintypes
 
 ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
@@ -112,13 +114,33 @@ def finish_update(staged_dir_name, latest_sha, parent_pid):
     if staged_dir.parent != (ROOT / ".barnoma_update_staging").resolve():
         raise RuntimeError("Недопустимый путь временного обновления.")
 
-    # The old server must fully exit before replacing run.py (especially on Windows).
-    while True:
-        try:
-            os.kill(int(parent_pid), 0)
-            time.sleep(0.35)
-        except OSError:
-            break
+    # Wait for the old server to exit before replacing run.py.
+    parent_pid = int(parent_pid)
+    if os.name == "nt":
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+        kernel32.OpenProcess.restype = wintypes.HANDLE
+        kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
+        kernel32.WaitForSingleObject.restype = wintypes.DWORD
+        kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
+        process_handle = kernel32.OpenProcess(0x00100000, False, parent_pid)  # SYNCHRONIZE
+        if process_handle:
+            kernel32.WaitForSingleObject(process_handle, 0xFFFFFFFF)
+            kernel32.CloseHandle(process_handle)
+        else:
+            # If Windows already reports that the process no longer exists, continue.
+            error_code = ctypes.get_last_error()
+            if error_code not in (87, 1168):
+                raise RuntimeError(f"Не удалось дождаться завершения старой программы (Windows: {error_code}).")
+    else:
+        while True:
+            try:
+                os.kill(parent_pid, 0)
+                time.sleep(0.35)
+            except ProcessLookupError:
+                break
+            except PermissionError:
+                time.sleep(0.35)
 
     backup_dir = ROOT / "backups" / datetime.now().strftime("%Y%m%d-%H%M%S")
     backup_dir.mkdir(parents=True, exist_ok=True)
