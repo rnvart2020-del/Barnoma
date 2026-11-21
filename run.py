@@ -2,19 +2,18 @@ from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path, PurePosixPath
 from datetime import datetime
 from io import BytesIO
+import ctypes
+from ctypes import wintypes
 import json
 import os
 import shutil
 import subprocess
 import sys
-import tempfile
 import threading
 import time
 import urllib.request
 import urllib.error
 import zipfile
-import ctypes
-from ctypes import wintypes
 
 ROOT = Path(__file__).resolve().parent
 os.chdir(ROOT)
@@ -23,8 +22,22 @@ REPOSITORY = "rnvart2020-del/Barnoma"
 API_URL = f"https://api.github.com/repos/{REPOSITORY}/commits/main"
 ARCHIVE_URL = f"https://api.github.com/repos/{REPOSITORY}/zipball/{{sha}}"
 VERSION_FILE = ROOT / ".barnoma_version"
+LOG_FILE = ROOT / ".barnoma_update.log"
+ERROR_LOG_FILE = ROOT / ".barnoma_update_error.log"
+STAGING_ROOT = ROOT / ".barnoma_update_staging"
+HELPER_FILE = ROOT / ".barnoma_update_helper.py"
 ALLOWED_FILES = {"index.html", "run.py", "README.md"}
 MAX_ARCHIVE_SIZE = 20 * 1024 * 1024
+
+
+def log(message, error=False):
+    path = ERROR_LOG_FILE if error else LOG_FILE
+    line = f"[{datetime.now().isoformat(timespec='seconds')}] {message}\n"
+    try:
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(line)
+    except Exception:
+        pass
 
 
 def github_request(url):
@@ -32,7 +45,7 @@ def github_request(url):
         url,
         headers={
             "Accept": "application/vnd.github+json",
-            "User-Agent": "Barnoma-Updater/1.0",
+            "User-Agent": "Barnoma-Updater/2.0",
             "X-GitHub-Api-Version": "2022-11-28",
         },
     )
@@ -54,7 +67,7 @@ def github_request(url):
 
 
 def stage_latest_update():
-    """Download and validate the exact GitHub commit without touching installed files."""
+    log("Проверка новой версии на GitHub.")
     commit_data = json.loads(github_request(API_URL).decode("utf-8"))
     latest_sha = commit_data.get("sha")
     if not latest_sha or len(latest_sha) != 40:
@@ -62,16 +75,16 @@ def stage_latest_update():
 
     installed_sha = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.exists() else ""
     if installed_sha == latest_sha:
+        log(f"Установлена последняя версия {latest_sha[:7]}.")
         return {"status": "current", "message": "У вас уже установлена последняя версия.", "sha": latest_sha[:7]}
 
     archive = github_request(ARCHIVE_URL.format(sha=latest_sha))
     if len(archive) > MAX_ARCHIVE_SIZE:
         raise RuntimeError("Архив обновления слишком большой.")
 
-    staging_root = ROOT / ".barnoma_update_staging"
-    if staging_root.exists():
-        shutil.rmtree(staging_root, ignore_errors=True)
-    staged_dir = staging_root / latest_sha
+    if STAGING_ROOT.exists():
+        shutil.rmtree(STAGING_ROOT, ignore_errors=True)
+    staged_dir = STAGING_ROOT / latest_sha
     staged_dir.mkdir(parents=True, exist_ok=True)
     found = set()
 
@@ -97,6 +110,7 @@ def stage_latest_update():
                 "В архиве GitHub не найдены index.html и run.py. "
                 "Обновление отменено, текущие файлы не изменены."
             )
+        log(f"Архив версии {latest_sha[:7]} загружен и проверен.")
         return {
             "status": "staged",
             "message": "Обновление загружено и проверено.",
@@ -104,18 +118,13 @@ def stage_latest_update():
             "staged_dir": str(staged_dir),
         }
     except Exception:
-        shutil.rmtree(staging_root, ignore_errors=True)
+        shutil.rmtree(STAGING_ROOT, ignore_errors=True)
         raise
 
 
-def finish_update(staged_dir_name, latest_sha, parent_pid):
-    """Run as a helper process: wait for the app to exit, then replace its files."""
-    staged_dir = Path(staged_dir_name).resolve()
-    if staged_dir.parent != (ROOT / ".barnoma_update_staging").resolve():
-        raise RuntimeError("Недопустимый путь временного обновления.")
-
-    # Wait for the old server to exit before replacing run.py.
+def wait_for_parent_exit(parent_pid):
     parent_pid = int(parent_pid)
+    log(f"Помощник запущен. Ожидаю завершения старого сервера PID {parent_pid}.")
     if os.name == "nt":
         kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
         kernel32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
@@ -123,39 +132,65 @@ def finish_update(staged_dir_name, latest_sha, parent_pid):
         kernel32.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
         kernel32.WaitForSingleObject.restype = wintypes.DWORD
         kernel32.CloseHandle.argtypes = [wintypes.HANDLE]
-        process_handle = kernel32.OpenProcess(0x00100000, False, parent_pid)  # SYNCHRONIZE
-        if process_handle:
-            kernel32.WaitForSingleObject(process_handle, 0xFFFFFFFF)
-            kernel32.CloseHandle(process_handle)
-        else:
-            # If Windows already reports that the process no longer exists, continue.
-            error_code = ctypes.get_last_error()
-            if error_code not in (87, 1168):
-                raise RuntimeError(f"Не удалось дождаться завершения старой программы (Windows: {error_code}).")
+        SYNCHRONIZE = 0x00100000
+        WAIT_OBJECT_0 = 0
+        WAIT_FAILED = 0xFFFFFFFF
+        handle = kernel32.OpenProcess(SYNCHRONIZE, False, parent_pid)
+        if not handle:
+            code = ctypes.get_last_error()
+            if code in (87, 1168):
+                log("Старый сервер уже завершился.")
+                return
+            raise RuntimeError(
+                f"Windows не разрешила дождаться старого процесса (код {code}). "
+                "Запусти Barnoma и обновление от обычного пользователя, не от разных учётных записей."
+            )
+        try:
+            result = kernel32.WaitForSingleObject(handle, 120000)
+            if result == WAIT_OBJECT_0:
+                log("Старый сервер завершён.")
+                return
+            if result == WAIT_FAILED:
+                raise RuntimeError(f"Ошибка ожидания процесса Windows: {ctypes.get_last_error()}.")
+            raise RuntimeError("Старый сервер не завершился за 2 минуты. Обновление остановлено.")
+        finally:
+            kernel32.CloseHandle(handle)
     else:
-        while True:
+        deadline = time.time() + 120
+        while time.time() < deadline:
             try:
                 os.kill(parent_pid, 0)
-                time.sleep(0.35)
             except ProcessLookupError:
-                break
+                log("Старый сервер завершён.")
+                return
             except PermissionError:
-                time.sleep(0.35)
+                pass
+            time.sleep(0.25)
+        raise RuntimeError("Старый сервер не завершился за 2 минуты. Обновление остановлено.")
 
-    backup_dir = ROOT / "backups" / datetime.now().strftime("%Y%m%d-%H%M%S")
+
+def finish_update(staged_dir_name, latest_sha, parent_pid):
+    staged_dir = Path(staged_dir_name).resolve()
+    if staged_dir.parent != STAGING_ROOT.resolve():
+        raise RuntimeError("Недопустимый путь временного обновления.")
+    wait_for_parent_exit(parent_pid)
+
+    backup_dir = ROOT / "backups" / datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     backup_dir.mkdir(parents=True, exist_ok=True)
     existing = [name for name in ALLOWED_FILES if (ROOT / name).is_file()]
     for name in existing:
         shutil.copy2(ROOT / name, backup_dir / name)
 
+    old_version = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.exists() else None
     replaced = []
     try:
-        for name in sorted(p.name for p in staged_dir.iterdir() if p.is_file() and p.name in ALLOWED_FILES):
+        log(f"Начинаю установку версии {latest_sha[:7]}.")
+        staged_names = sorted(p.name for p in staged_dir.iterdir() if p.is_file() and p.name in ALLOWED_FILES)
+        for name in staged_names:
             source = staged_dir / name
             destination = ROOT / name
-            # Windows can briefly retain a file lock after the server exits.
             last_error = None
-            for attempt in range(20):
+            for attempt in range(30):
                 try:
                     os.replace(source, destination)
                     last_error = None
@@ -166,21 +201,16 @@ def finish_update(staged_dir_name, latest_sha, parent_pid):
             if last_error:
                 raise last_error
             replaced.append(name)
+            log(f"Файл {name} заменён.")
 
         temp_version = ROOT / ".barnoma_version.tmp"
         temp_version.write_text(latest_sha, encoding="utf-8")
         os.replace(temp_version, VERSION_FILE)
-        shutil.rmtree(staged_dir.parent, ignore_errors=True)
 
-        log = ROOT / ".barnoma_update.log"
-        log.write_text(
-            f"Обновление {latest_sha[:7]} установлено: {datetime.now().isoformat(timespec='seconds')}\n"
-            f"Резервная копия: {backup_dir}\n",
-            encoding="utf-8",
-        )
         flags = 0
         if os.name == "nt":
             flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        # Run the new app only after all files and the version marker are in place.
         subprocess.Popen(
             [sys.executable, str(ROOT / "run.py")],
             cwd=str(ROOT),
@@ -190,15 +220,19 @@ def finish_update(staged_dir_name, latest_sha, parent_pid):
             creationflags=flags,
             start_new_session=(os.name != "nt"),
         )
+        log(f"Обновление {latest_sha[:7]} успешно установлено. Резервная копия: {backup_dir}")
+        shutil.rmtree(STAGING_ROOT, ignore_errors=True)
     except Exception as error:
+        log(f"Ошибка установки: {error}", error=True)
         for name in reversed(replaced):
             backup = backup_dir / name
             if backup.exists():
                 shutil.copy2(backup, ROOT / name)
-        (ROOT / ".barnoma_update_error.log").write_text(
-            f"Ошибка установки обновления: {error}\nВремя: {datetime.now().isoformat(timespec='seconds')}\n",
-            encoding="utf-8",
-        )
+        if old_version is None:
+            VERSION_FILE.unlink(missing_ok=True)
+        else:
+            VERSION_FILE.write_text(old_version, encoding="utf-8")
+        log("Выполнен откат к предыдущим файлам.", error=True)
         raise
 
 
@@ -229,9 +263,12 @@ class Handler(SimpleHTTPRequestHandler):
                 self.send_json(200, result)
                 return
 
+            # Important on Windows: the helper is a separate copy, so it does not
+            # execute the run.py file that it needs to replace.
+            shutil.copy2(Path(__file__).resolve(), HELPER_FILE)
             helper_args = [
                 sys.executable,
-                str(ROOT / "run.py"),
+                str(HELPER_FILE),
                 "--finish-update",
                 result["staged_dir"],
                 result["sha"],
@@ -251,11 +288,12 @@ class Handler(SimpleHTTPRequestHandler):
             )
             self.send_json(200, {
                 "status": "updated",
-                "message": "Обновление загружено. Программа сейчас перезапустится.",
+                "message": "Обновление загружено. Barnoma перезапустится автоматически.",
                 "sha": result["sha"][:7],
             })
-            threading.Timer(0.8, self.server.shutdown).start()
+            threading.Timer(1.0, self.server.shutdown).start()
         except Exception as error:
+            log(f"Не удалось подготовить обновление: {error}", error=True)
             self.send_json(500, {
                 "status": "error",
                 "message": f"Не удалось подготовить обновление: {error}",
@@ -266,7 +304,8 @@ if __name__ == "__main__":
     if len(sys.argv) >= 5 and sys.argv[1] == "--finish-update":
         try:
             finish_update(sys.argv[2], sys.argv[3], sys.argv[4])
-        except Exception:
+        except Exception as error:
+            log(f"Помощник обновления завершился с ошибкой: {error}", error=True)
             sys.exit(1)
     else:
         address = "127.0.0.1"
