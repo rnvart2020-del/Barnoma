@@ -356,7 +356,7 @@ body.light .toast{background:#fff;color:#35202a;border-color:#f0d8de}
    <div class="setting"><h3>Версия приложения</h3><p>Barnoma 0.4.0 · Локальное хранение в браузере.</p><button class="btn" id="repoBtn">Открыть GitHub ↗</button></div>
   </div>
  </section>
- <footer class="footer">Barnoma · организуй своё пространство · версия 0.4.0</footer>
+ <footer class="footer">Barnoma · организуй своё пространство · версия 0.4.1</footer>
 </main>
 </div><div class="toast" id="toast" role="status"></div>
 <script>
@@ -457,7 +457,19 @@ $('#updateBtn').addEventListener('click',async()=>{
   if(result.status==='updated'){
    toast('Обновление установлено. Перезапускаю Barnoma…');
    b.textContent='Перезапуск…';
-   setTimeout(()=>location.reload(),3500);
+   let ready=false;
+   for(let attempt=0;attempt<30;attempt++){
+    await new Promise(resolve=>setTimeout(resolve,1000));
+    try{
+     const check=await fetch('/?barnoma_restart='+Date.now(),{cache:'no-store'});
+     if(check.ok){ready=true;break;}
+    }catch(_){}
+   }
+   if(ready)location.reload();
+   else{
+    alert('Файлы обновлены, но программа не перезапустилась автоматически. Закрой окно run.py и запусти его снова.');
+    b.disabled=false;b.textContent='↻ Обновления';
+   }
   }else{
    toast(result.message||'Установлена последняя версия.');
    b.disabled=false;b.textContent='↻ Обновления';
