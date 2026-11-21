@@ -73,11 +73,9 @@ def stage_latest_update():
     if not latest_sha or len(latest_sha) != 40:
         raise RuntimeError("GitHub вернул некорректный номер версии.")
 
-    installed_sha = VERSION_FILE.read_text(encoding="utf-8").strip() if VERSION_FILE.exists() else ""
-    if installed_sha == latest_sha:
-        log(f"Установлена последняя версия {latest_sha[:7]}.")
-        return {"status": "current", "message": "У вас уже установлена последняя версия.", "sha": latest_sha[:7]}
-
+    # Не доверяем одному только .barnoma_version: старые версии updater
+    # могли записать новый SHA, даже если файлы фактически не заменились.
+    # Поэтому сначала скачиваем архив и сверяем реальные файлы на диске.
     archive = github_request(ARCHIVE_URL.format(sha=latest_sha))
     if len(archive) > MAX_ARCHIVE_SIZE:
         raise RuntimeError("Архив обновления слишком большой.")
@@ -101,8 +99,7 @@ def stage_latest_update():
                 name = parts[1]
                 if name in found:
                     raise RuntimeError(f"В архиве обнаружен повторяющийся файл: {name}")
-                destination = staged_dir / name
-                destination.write_bytes(bundle.read(item))
+                (staged_dir / name).write_bytes(bundle.read(item))
                 found.add(name)
 
         if not {"index.html", "run.py"}.issubset(found):
@@ -110,6 +107,28 @@ def stage_latest_update():
                 "В архиве GitHub не найдены index.html и run.py. "
                 "Обновление отменено, текущие файлы не изменены."
             )
+
+        same_files = all(
+            (ROOT / name).is_file()
+            and (ROOT / name).read_bytes() == (staged_dir / name).read_bytes()
+            for name in found
+        )
+        if same_files:
+            temp_version = ROOT / ".barnoma_version.tmp"
+            temp_version.write_text(latest_sha, encoding="utf-8")
+            os.replace(temp_version, VERSION_FILE)
+            shutil.rmtree(STAGING_ROOT, ignore_errors=True)
+            log(f"Файлы уже соответствуют GitHub версии {latest_sha[:7]}; маркер версии синхронизирован.")
+            return {
+                "status": "current",
+                "message": "Установлена последняя версия. Файлы проверены.",
+                "sha": latest_sha[:7],
+            }
+
+        log(
+            f"Обнаружено расхождение с GitHub {latest_sha[:7]}. "
+            f"Маркер версии: {VERSION_FILE.read_text(encoding='utf-8').strip()[:7] if VERSION_FILE.exists() else 'отсутствует'}."
+        )
         log(f"Архив версии {latest_sha[:7]} загружен и проверен.")
         return {
             "status": "staged",
