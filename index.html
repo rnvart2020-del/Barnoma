@@ -281,6 +281,66 @@ body.light .toast{background:#fff;color:#35202a;border-color:#f0d8de}
  body.light .sidebar{background:#ffffffed;border-top-color:#f0d8de}
 }
 
+
+/* Barnoma — classic edition */
+:root{
+ --bg:#101923;--side:#172330;--card:#1c2a38;--card2:#263747;
+ --line:#354858;--text:#edf0ed;--muted:#a7b1b6;
+ --accent:#c5a66b;--accent2:#a98a52;--green:#8eb49a;
+ --yellow:#d8b875;--red:#ce8c83;--shadow:0 8px 24px #050b1080;
+}
+body{background:var(--bg);font-family:Georgia,"Times New Roman",serif;letter-spacing:0}
+.sidebar{background:var(--side);border-right:1px solid var(--line);box-shadow:none}
+.logo{background:#c5a66b;color:#172330;border-radius:7px;box-shadow:none}
+.brand b,.welcome h1,.card h2,.page-title,.calendar-head h2,.selected-day-heading h2{font-family:Georgia,"Times New Roman",serif;letter-spacing:0}
+.nav button{border-radius:6px;color:var(--muted);font-weight:500}
+.nav button:hover,.nav button.active{background:#293a49;color:#f5f1e8;transform:none;box-shadow:inset 3px 0 var(--accent)}
+.eyebrow{color:var(--accent);letter-spacing:1.3px}
+.btn{background:var(--card2);border:1px solid #526273;border-radius:6px;box-shadow:none}
+.btn:hover{background:#314658;border-color:var(--accent);transform:none}
+.btn.primary{background:var(--accent);border:1px solid var(--accent);color:#18232c;box-shadow:none}
+.btn.primary:hover{background:#d4b77f;filter:none}
+.btn.subtle{background:transparent;box-shadow:none}
+.date-pill,.stat,.card{background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:none}
+.stat{padding:17px}.stat:after{display:none}
+.stat-icon{background:#334454;color:var(--accent);border-radius:6px}
+.task,.calendar-day,.setting{background:#172431;border:1px solid var(--line);border-radius:6px}
+.task:hover{background:#203140;border-color:#647587;transform:none}
+.task input[type=checkbox]{accent-color:var(--accent)}
+.progress-track{background:#354858}.progress-fill{background:var(--accent)}
+.field{background:#111d28;border:1px solid #435565;border-radius:6px;color:var(--text)}
+.field:focus{border-color:var(--accent);box-shadow:0 0 0 2px #c5a66b22}
+.day-cell{background:#172431;border:1px solid var(--line);border-radius:6px}
+.day-cell:hover{background:#263746;border-color:var(--accent)}
+.day-cell.selected{background:#39404a;border:2px solid var(--accent);box-shadow:none}
+.day-cell.today .day-number,.calendar-day h3{color:var(--accent)}
+.day-dot.note{background:var(--accent)}
+.empty{border-color:#526273;background:#172431;color:var(--muted);border-radius:6px}
+.toast{background:#263747;border:1px solid #647587;border-radius:6px;box-shadow:var(--shadow)}
+.footer{color:var(--muted)}
+body.light{
+ color-scheme:light;--bg:#f3f0e8;--side:#e8e2d5;--card:#fffdf8;--card2:#eee9de;
+ --line:#d6cdbd;--text:#28323a;--muted:#73766f;--accent:#967543;--accent2:#806239;
+ --green:#63866e;--yellow:#a9874c;--red:#a7655d;--shadow:0 8px 24px #44351b12;
+ background:#f3f0e8;
+}
+body.light .sidebar{background:#e8e2d5;border-right-color:#d6cdbd;box-shadow:none}
+body.light .nav button{color:#666b68}
+body.light .nav button:hover,body.light .nav button.active{background:#dcd4c5;color:#28323a;box-shadow:inset 3px 0 #967543}
+body.light .stat,body.light .card{background:#fffdf8;border-color:#d6cdbd;box-shadow:none}
+body.light .stat-icon{background:#eee8dc;color:#806239}
+body.light .task,body.light .calendar-day,body.light .setting,body.light .day-cell{background:#f8f5ed;border-color:#d6cdbd}
+body.light .task:hover,body.light .day-cell:hover{background:#eee9de;border-color:#b9a47f}
+body.light .field{background:#fffdf8;border-color:#d6cdbd;color:#28323a}
+body.light .date-pill{background:#fffdf8;border-color:#d6cdbd;color:#666b68}
+body.light .btn{background:#eee9de;border-color:#d0c6b5;color:#28323a}
+body.light .btn.primary{background:#967543;border-color:#967543;color:#fffdf8}
+body.light .day-cell.selected{background:#e8dfce;border-color:#967543}
+body.light .empty{background:#faf8f2;border-color:#d6cdbd;color:#73766f}
+body.light .toast{background:#fffdf8;color:#28323a;border-color:#d6cdbd}
+@media(max-width:850px){.sidebar{background:var(--side);border-right:1px solid var(--line)}}
+@media(max-width:600px){.sidebar{background:var(--side);border-top:1px solid var(--line);box-shadow:0 -4px 16px #050b1018}body.light .sidebar{background:#e8e2d5;border-top-color:#d6cdbd}}
+
 </style>
 </head>
 <body>
