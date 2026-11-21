@@ -71,10 +71,10 @@ body.light{color-scheme:light;--bg:#f3f5fa;--side:#fff;--card:#fff;--card2:#f1f3
    <div class="setting"><h3>Внешний вид</h3><p>Переключай светлую и тёмную тему.</p><button class="btn" id="themeSetting">Сменить тему</button></div>
    <div class="setting"><h3>Резервная копия</h3><p>Сохрани задачи и заметки в JSON-файл.</p><button class="btn" id="exportBtn">↓ Экспортировать данные</button></div>
    <div class="setting"><h3>Восстановление данных</h3><p>Загрузи ранее сохранённую копию Barnoma.</p><input type="file" id="importFile" accept="application/json" class="field"></div>
-   <div class="setting"><h3>Версия приложения</h3><p>Barnoma 0.2.0 · Локальное хранение в браузере.</p><button class="btn" id="repoBtn">Открыть GitHub ↗</button></div>
+   <div class="setting"><h3>Версия приложения</h3><p>Barnoma 0.3.0 · Локальное хранение в браузере.</p><button class="btn" id="repoBtn">Открыть GitHub ↗</button></div>
   </div>
  </section>
- <footer class="footer">Barnoma · организуй своё пространство · версия 0.2.0</footer>
+ <footer class="footer">Barnoma · организуй своё пространство · версия 0.3.0</footer>
 </main>
 </div><div class="toast" id="toast" role="status"></div>
 <script>
@@ -104,6 +104,28 @@ function setTheme(){document.body.classList.toggle('light',data.theme==='light')
 function go(page){$$('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+page));$$('.nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===page));$('#crumb').textContent=({home:'ГЛАВНАЯ',tasks:'ЗАДАЧИ',calendar:'КАЛЕНДАРЬ',notes:'ЗАМЕТКИ',settings:'НАСТРОЙКИ'})[page];window.scrollTo({top:0,behavior:'smooth'})}$$('.nav button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.page)));$$('[data-goto]').forEach(b=>b.addEventListener('click',()=>go(b.dataset.goto)));
 $('#exportBtn').addEventListener('click',()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='barnoma-backup-'+iso(today)+'.json';a.click();URL.revokeObjectURL(url);toast('Резервная копия скачана')});
 $('#importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{const incoming=JSON.parse(await file.text());if(!incoming||!Array.isArray(incoming.tasks)||typeof incoming.notes!=='string')throw new Error('Формат файла не подходит');if(!confirm('Заменить текущие задачи и заметки данными из файла?'))return;data={...data,...incoming};persist();$('#homeNote').value=data.notes;$('#notesPage').value=data.notes;render();toast('Данные восстановлены')}catch(err){alert('Не удалось импортировать файл: '+err.message)}e.target.value=''});
-$('#repoBtn').addEventListener('click',()=>window.open(repo,'_blank','noopener'));$('#updateBtn').addEventListener('click',async()=>{const b=$('#updateBtn');b.disabled=true;b.textContent='Проверка…';try{const r=await fetch('https://api.github.com/repos/rnvart2020-del/Barnoma/commits/main',{headers:{Accept:'application/vnd.github+json'}});if(!r.ok)throw Error();const c=await r.json();alert('GitHub доступен. Последний коммит: '+c.sha.slice(0,7)+'\nДата: '+new Date(c.commit.committer.date).toLocaleString('ru-RU')+'\n\nПроверка выполнена. Автоматическая установка обновлений будет добавлена в локальную версию позже.')}catch{alert('Не удалось связаться с GitHub. Проверь интернет-соединение.')}finally{b.disabled=false;b.textContent='↻ Обновления'}});
+$('#repoBtn').addEventListener('click',()=>window.open(repo,'_blank','noopener'));
+$('#updateBtn').addEventListener('click',async()=>{
+ const b=$('#updateBtn');
+ if(!confirm('Проверить GitHub и установить последнюю версию Barnoma? Перед заменой файлов программа создаст резервную копию.'))return;
+ b.disabled=true;b.textContent='Загрузка…';
+ try{
+  const r=await fetch('/api/update',{method:'POST',headers:{'X-Barnoma-Update':'1'}});
+  if(!r.headers.get('content-type')?.includes('application/json'))throw new Error('Автообновление работает только при запуске через run.py на компьютере.');
+  const result=await r.json();
+  if(!r.ok)throw new Error(result.message||'Не удалось выполнить обновление.');
+  if(result.status==='updated'){
+   toast('Обновление установлено. Перезапускаю Barnoma…');
+   b.textContent='Перезапуск…';
+   setTimeout(()=>location.reload(),3500);
+  }else{
+   toast(result.message||'Установлена последняя версия.');
+   b.disabled=false;b.textContent='↻ Обновления';
+  }
+ }catch(error){
+  alert(error.message||'Не удалось связаться с GitHub. Проверь интернет-соединение.');
+  b.disabled=false;b.textContent='↻ Обновления';
+ }
+});
 render();
 </script></body></html>
