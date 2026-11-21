@@ -181,6 +181,41 @@ body.light .toast{background:#fff;color:#24314b;border-color:#dce2ee}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
 
+
+/* Monthly calendar and notes for a selected day */
+.calendar-card{padding:22px}
+.calendar-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px;text-align:center}
+.calendar-head h2{font-size:18px;margin:0 0 3px;text-transform:capitalize}
+.calendar-head .btn{min-width:42px;font-size:23px;line-height:1;padding:8px 12px}
+.month-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px}
+.weekday{text-align:center;color:var(--muted);font-size:11px;font-weight:750;padding:7px 0}
+.day-cell{min-height:74px;border:1px solid var(--line);border-radius:12px;background:#21121a;color:var(--text);padding:8px;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left}
+.day-cell:hover{border-color:var(--accent);background:#301923}
+.day-cell.outside{opacity:.42}
+.day-cell.selected{border:2px solid var(--accent);background:#49202d;box-shadow:0 0 0 2px #ff526b18}
+.day-cell.today .day-number{color:var(--accent);font-weight:900}
+.day-number{font-size:13px;font-weight:650}
+.day-markers{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.day-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.day-dot.note{background:var(--accent)}
+.day-task-count{font-size:10px;color:var(--muted)}
+.selected-day-panel{border-top:1px solid var(--line);margin-top:22px;padding-top:20px}
+.selected-day-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+.selected-day-heading h2{font-size:18px;margin:4px 0 0;text-transform:capitalize}
+.day-note{min-height:130px;resize:vertical;line-height:1.7}
+.selected-tasks{margin-top:20px}
+@media(max-width:600px){
+ .calendar-card{padding:13px}
+ .month-grid{gap:4px}
+ .day-cell{min-height:55px;padding:5px;border-radius:9px}
+ .weekday{font-size:10px}
+ .day-number{font-size:12px}
+ .day-task-count{font-size:9px}
+}
+body.light .day-cell{background:#fff8f9}
+body.light .day-cell:hover{background:#fff0f2}
+body.light .day-cell.selected{background:#ffe5ea}
+
 /* Barnoma — red edition */
 :root{
  --bg:#160d12;--side:#211017;--card:#2a151d;--card2:#3a1b27;
@@ -296,7 +331,17 @@ body.light .toast{background:#fff;color:#35202a;border-color:#f0d8de}
  </section>
  <section class="page" id="page-calendar">
   <div class="welcome"><div><div class="eyebrow">РАСПИСАНИЕ</div><h1>Календарь</h1><p>Все задачи со сроками, сгруппированные по дням.</p></div></div>
-  <div class="card"><div class="card-head"><h2>Предстоящие дела</h2><span class="muted small-text" id="calendarCount"></span></div><div class="calendar-list" id="calendarList"></div></div>
+  <div class="card calendar-card">
+   <div class="calendar-head"><button class="btn" id="prevMonth" aria-label="Предыдущий месяц">‹</button><div><h2 id="monthTitle">Месяц</h2><div class="muted small-text">Выбери день, чтобы добавить заметку</div></div><button class="btn" id="nextMonth" aria-label="Следующий месяц">›</button></div>
+   <div class="month-grid" id="monthGrid"></div>
+   <div class="selected-day-panel">
+    <div class="selected-day-heading"><div><div class="eyebrow">ВЫБРАННЫЙ ДЕНЬ</div><h2 id="selectedDateTitle">Сегодня</h2></div><button class="btn small subtle" id="todayCalendarBtn">Сегодня</button></div>
+    <label class="label" for="dayNote">Заметка на этот день</label>
+    <textarea id="dayNote" class="field day-note" placeholder="Запиши планы, важные события или напоминания на выбранную дату…"></textarea>
+    <div class="note-status" id="dayNoteStatus">Заметка сохраняется автоматически на этом устройстве.</div>
+    <div class="selected-tasks"><div class="card-head"><h2>Задачи на этот день</h2><span class="muted small-text" id="selectedTaskCount"></span></div><div class="task-list" id="selectedDayTasks"></div></div>
+   </div>
+  </div>
  </section>
  <section class="page" id="page-notes">
   <div class="welcome"><div><div class="eyebrow">МЫСЛИ И ИДЕИ</div><h1>Заметки</h1><p>Твоя личная область для важных мыслей.</p></div></div>
@@ -320,6 +365,9 @@ const today=new Date();const iso=d=>{const x=new Date(d);return x.getFullYear()+
 $('#todayDate').textContent=new Intl.DateTimeFormat('ru-RU',{weekday:'long',day:'numeric',month:'long'}).format(today);
 let data={tasks:[],notes:'',theme:'dark'};try{const raw=JSON.parse(localStorage.getItem('barnoma.data')||'null');if(raw&&typeof raw==='object')data={...data,...raw}}catch{}
 if(!Array.isArray(data.tasks))data.tasks=[];
+if(!data.calendarNotes||typeof data.calendarNotes!=='object'||Array.isArray(data.calendarNotes))data.calendarNotes={};
+let selectedDate=iso(today);
+let visibleMonth=new Date(today.getFullYear(),today.getMonth(),1);
 const persist=()=>localStorage.setItem('barnoma.data',JSON.stringify(data));
 function toast(msg){const t=$('#toast');t.textContent=msg;t.style.display='block';clearTimeout(toast.timer);toast.timer=setTimeout(()=>t.style.display='none',2600)}
 function dateText(d){if(!d)return 'Без срока';const x=new Date(d+'T12:00:00');return x.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})}
@@ -328,8 +376,63 @@ function fillTasks(target,items,empty){const el=$(target);el.innerHTML='';if(!it
 function render(){const tasks=data.tasks,done=tasks.filter(t=>t.done).length,open=tasks.length-done,todayTasks=tasks.filter(t=>t.date===iso(today)&&!t.done).length;$('#statTotal').textContent=tasks.length;$('#statDone').textContent=done;$('#statOpen').textContent=open;$('#statToday').textContent=todayTasks;const pct=tasks.length?Math.round(done/tasks.length*100):0;$('#progressLabel').textContent=pct+'%';$('#progressFill').style.width=pct+'%';
 const active=tasks.filter(t=>!t.done).sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));fillTasks('#homeTasks',active.slice(0,5),'Пока нет активных задач. Добавь первую!');const dated=tasks.filter(t=>t.date&&!t.done).sort((a,b)=>a.date.localeCompare(b.date));const up=$('#upcoming');up.innerHTML='';if(!dated.length){up.innerHTML='<div class="empty">Нет запланированных задач. Добавь срок в разделе «Задачи».</div>'}else dated.slice(0,4).forEach(t=>{const line=document.createElement('div');line.className='task';const title=document.createElement('div');title.className='task-main';title.innerHTML='<div class="task-title"></div><div class="task-meta"></div>';title.querySelector('.task-title').textContent=t.title;title.querySelector('.task-meta').textContent=dateText(t.date)+' · '+(t.category||'Личное');line.append(title);up.append(line)});
 const q=$('#taskSearch').value.toLowerCase(),f=$('#taskFilter').value,c=$('#categoryFilter').value;let filtered=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:!t.done))&&(c==='all'||t.category===c));filtered.sort((a,b)=>Number(a.done)-Number(b.done));fillTasks('#allTasks',filtered,'Задачи не найдены. Попробуй изменить фильтр или добавь новую задачу.');
-const groups={};dated.forEach(t=>(groups[t.date]??=[]).push(t));const cal=$('#calendarList');cal.innerHTML='';const dates=Object.keys(groups).sort();$('#calendarCount').textContent=dates.length+' дней запланировано';if(!dates.length)cal.innerHTML='<div class="empty">Календарь пока пуст. Укажи дату выполнения у задачи.</div>';dates.forEach(d=>{const block=document.createElement('div');block.className='calendar-day';const h=document.createElement('h3');h.textContent=new Date(d+'T12:00:00').toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});block.append(h);groups[d].forEach(t=>block.append(taskNode(t)));cal.append(block)});
+renderCalendar();
 }
+
+const monthNames=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+function renderCalendar(){
+ const year=visibleMonth.getFullYear(),month=visibleMonth.getMonth();
+ $('#monthTitle').textContent=monthNames[month]+' '+year;
+ const grid=$('#monthGrid');grid.innerHTML='';
+ ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].forEach(label=>{const h=document.createElement('div');h.className='weekday';h.textContent=label;grid.append(h)});
+ const first=new Date(year,month,1),offset=(first.getDay()+6)%7,start=new Date(year,month,1-offset);
+ for(let i=0;i<42;i++){
+  const d=new Date(start.getFullYear(),start.getMonth(),start.getDate()+i),key=iso(d),cell=document.createElement('button');
+  cell.type='button';cell.className='day-cell'+(d.getMonth()!==month?' outside':'')+(key===selectedDate?' selected':'')+(key===iso(today)?' today':'');
+  const number=document.createElement('span');number.className='day-number';number.textContent=d.getDate();cell.append(number);
+  const taskCount=data.tasks.filter(t=>t.date===key).length,hasNote=!!(data.calendarNotes[key]||'').trim();
+  const markers=document.createElement('span');markers.className='day-markers';
+  if(taskCount){const dot=document.createElement('i');dot.className='day-dot';dot.title='Есть задачи';markers.append(dot)}
+  if(hasNote){const dot=document.createElement('i');dot.className='day-dot note';dot.title='Есть заметка';markers.append(dot)}
+  if(taskCount){const count=document.createElement('span');count.className='day-task-count';count.textContent=taskCount+' задач';markers.append(count)}
+  cell.append(markers);cell.addEventListener('click',()=>{selectedDate=key;if(d.getMonth()!==month)visibleMonth=new Date(d.getFullYear(),d.getMonth(),1);renderCalendar()});grid.append(cell);
+ }
+ const chosen=new Date(selectedDate+'T12:00:00');
+ $('#selectedDateTitle').textContent=chosen.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+ $('#dayNote').value=data.calendarNotes[selectedDate]||'';
+ $('#dayNoteStatus').textContent=hasSavedDayNote(selectedDate)?'Заметка сохранена на этом устройстве.':'Заметка сохраняется автоматически на этом устройстве.';
+ const dayTasks=data.tasks.filter(t=>t.date===selectedDate).sort((a,b)=>Number(a.done)-Number(b.done));
+ $('#selectedTaskCount').textContent=dayTasks.length+' шт.';
+ fillTasks('#selectedDayTasks',dayTasks,'На этот день пока нет задач.');
+}
+function hasSavedDayNote(key){return !!(data.calendarNotes[key]||'').trim()}
+$('#prevMonth').addEventListener('click',()=>{visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()-1,1);renderCalendar()});
+$('#nextMonth').addEventListener('click',()=>{visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()+1,1);renderCalendar()});
+$('#todayCalendarBtn').addEventListener('click',()=>{selectedDate=iso(today);visibleMonth=new Date(today.getFullYear(),today.getMonth(),1);renderCalendar()});
+let dayNoteTimer;
+$('#dayNote').addEventListener('input',()=>{
+ const key=selectedDate,value=$('#dayNote').value;
+ $('#dayNoteStatus').textContent='Сохраняю…';
+ clearTimeout(dayNoteTimer);
+ dayNoteTimer=setTimeout(()=>{
+  if(value.trim())data.calendarNotes[key]=value;else delete data.calendarNotes[key];
+  persist();$('#dayNoteStatus').textContent='Сохранено '+new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  renderCalendarMarkersOnly();
+ },250);
+});
+function renderCalendarMarkersOnly(){
+ const cells=$('#monthGrid .day-cell');
+ cells.forEach(cell=>{
+  const dayNumber=cell.querySelector('.day-number');if(!dayNumber)return;
+  const d=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth(),1-((new Date(visibleMonth.getFullYear(),visibleMonth.getMonth(),1).getDay()+6)%7)+cells.indexOf(cell));
+  const key=iso(d),markers=cell.querySelector('.day-markers');if(!markers)return;
+  markers.innerHTML='';const count=data.tasks.filter(t=>t.date===key).length;
+  if(count){const dot=document.createElement('i');dot.className='day-dot';dot.title='Есть задачи';markers.append(dot)}
+  if(hasSavedDayNote(key)){const dot=document.createElement('i');dot.className='day-dot note';dot.title='Есть заметка';markers.append(dot)}
+  if(count){const label=document.createElement('span');label.className='day-task-count';label.textContent=count+' задач';markers.append(label)}
+ });
+}
+
 function addTask(title,extra={}){const clean=title.trim();if(!clean)return;data.tasks.unshift({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),title:clean,done:false,priority:extra.priority||'medium',category:extra.category||'Личное',date:extra.date||''});persist();render()}
 $('#quickAdd').addEventListener('click',()=>{addTask($('#quickTask').value);$('#quickTask').value=''});$('#quickTask').addEventListener('keydown',e=>{if(e.key==='Enter')$('#quickAdd').click()});
 $('#showAdd').addEventListener('click',()=>{$('#addPanel').hidden=false;$('#newTitle').focus()});$('#hideAdd').addEventListener('click',()=>$('#addPanel').hidden=true);
