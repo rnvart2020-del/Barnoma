@@ -9,6 +9,177 @@
 body.light{color-scheme:light;--bg:#f3f5fa;--side:#fff;--card:#fff;--card2:#f1f3fa;--line:#e0e5ef;--text:#202b40;--muted:#718097;--accent:#6677df;--accent2:#6677df;--shadow:0 18px 50px #24304a18}body.light .task,body.light .calendar-day,body.light .setting,body.light .field{background:#f7f8fc;border-color:#e6eaf2}body.light .nav button:hover,body.light .nav button.active{background:#eef0fb}body.light .progress-track{background:#e6eaf2}
 @media(max-width:850px){.app{grid-template-columns:76px 1fr}.sidebar{padding:20px 10px;align-items:center}.brand{padding:0}.brand>div:last-child,.nav-label,.nav button .nav-text,.profile>div:last-child{display:none}.nav{width:100%}.nav button{justify-content:center;padding:12px 5px}.side-bottom{width:100%}.profile{justify-content:center;padding:15px 0 0}.dashboard-grid{grid-template-columns:1fr}}
 @media(max-width:600px){.app{display:block}.sidebar{position:fixed;z-index:5;bottom:0;left:0;right:0;height:66px;padding:6px 10px;background:var(--side);border-right:0;border-top:1px solid var(--line);display:block}.brand,.side-bottom{display:none}.nav-label{display:none}.nav{display:flex;justify-content:space-around;gap:2px}.nav button{flex:1;display:flex;flex-direction:column;gap:1px;font-size:9px;padding:6px 2px}.nav button .nav-text{display:block}.nav .ico{font-size:17px}.main{padding:20px 14px 90px}.topbar{margin-bottom:22px}.grid-stats{grid-template-columns:repeat(2,1fr)}.welcome{align-items:flex-start;flex-direction:column}.date-pill{display:none}.task-form{grid-template-columns:1fr}.task-form .wide{grid-column:auto}.settings-grid{grid-template-columns:1fr}.search{max-width:100%}.section-toolbar{align-items:stretch}.toolbar-left,.toolbar-right{width:100%}.toolbar-left .search{flex:1}.quick-add .btn{white-space:nowrap}}
+
+/* Barnoma 0.3.1 — refreshed visual system */
+:root{
+ --bg:#0a1020;--side:#0d1729;--card:#121f35;--card2:#1a2b47;
+ --line:#263955;--text:#f4f7ff;--muted:#98a8c1;--accent:#a9a5ff;
+ --accent2:#7b82f6;--green:#65dfb2;--yellow:#f6c66f;--red:#ff8798;
+ --shadow:0 18px 55px #02081770;
+}
+body{
+ background:
+  radial-gradient(ellipse at 78% -10%,#4540a52b 0,transparent 38%),
+  radial-gradient(ellipse at 8% 35%,#1c8b8a13 0,transparent 35%),var(--bg);
+ letter-spacing:.005em;
+}
+button,.btn,.field{transition:background .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sidebar{
+ background:linear-gradient(180deg,#101d33f5,#0c1729f5);
+ border-right:1px solid #34476480;
+ box-shadow:12px 0 40px #02081720;
+ padding:29px 17px;
+}
+.logo{
+ width:42px;height:42px;border-radius:14px;
+ background:linear-gradient(145deg,#c1baff,#777df4 58%,#59c9bd);
+ box-shadow:0 8px 25px #7d79f555,inset 0 1px 0 #ffffff70;
+}
+.brand b{font-size:20px;letter-spacing:-.5px}
+.nav{gap:7px}
+.nav button{
+ position:relative;padding:12px 13px;border-radius:12px;
+ color:#a1afc5;font-weight:550;
+}
+.nav button:hover{background:#1b2b45;color:#fff;transform:translateX(2px)}
+.nav button.active{
+ background:linear-gradient(100deg,#7778ee30,#42b9b01a);
+ color:#fff;box-shadow:inset 3px 0 #aaa5ff,0 5px 18px #050a1830;
+}
+.nav .ico{font-size:18px}
+.main{padding-top:31px;max-width:1580px}
+.topbar{margin-bottom:35px}
+.crumb{font-size:11px;letter-spacing:1.3px;font-weight:750;color:#8395b1}
+.top-actions .btn{border-radius:12px;padding:10px 15px}
+.btn{
+ background:#1a2b45;border-color:#304665;border-radius:12px;
+ box-shadow:0 3px 10px #02081722;
+}
+.btn:hover{border-color:#9e9cff;background:#263958;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.primary{
+ color:#10162e;background:linear-gradient(135deg,#c1baff,#8989fa 58%,#75d4c5);
+ border:0;box-shadow:0 7px 20px #8989fa38;font-weight:750;
+}
+.btn.primary:hover{filter:brightness(1.07);box-shadow:0 9px 25px #8989fa55}
+.btn.subtle{background:transparent;box-shadow:none}
+.welcome{margin-bottom:27px}
+.eyebrow{font-size:10px;letter-spacing:2px;color:#aaa5ff}
+.welcome h1{font-size:clamp(29px,3.2vw,40px);letter-spacing:-1.5px;font-weight:760}
+.welcome p{font-size:14px;color:#9eacc2}
+.date-pill{
+ background:#16243a;border:1px solid #30415e;border-radius:14px;
+ color:#c3cce0;padding:11px 16px;box-shadow:0 7px 22px #02081724;
+}
+.grid-stats{gap:15px;margin-bottom:17px}
+.stat,.card{
+ background:linear-gradient(145deg,#172640eF,#111e32f5);
+ border:1px solid #2a3d5a;border-radius:19px;
+ box-shadow:0 10px 32px #02081725;
+}
+.stat{padding:18px 19px;position:relative;overflow:hidden}
+.stat:after{
+ content:"";position:absolute;width:90px;height:90px;border-radius:50%;
+ right:-43px;bottom:-55px;background:#9992ff12;pointer-events:none;
+}
+.stat-top{font-size:12px;color:#a8b5ca;font-weight:600}
+.stat-icon{width:34px;height:34px;border-radius:11px;background:#8584f51c;color:#c2bdff}
+.stat strong{font-size:31px;letter-spacing:-1.2px;margin-top:12px}
+.card{padding:21px}
+.card h2{font-size:16px;letter-spacing:-.25px;font-weight:700}
+.card-head{margin-bottom:18px}
+.dashboard-grid{gap:17px}
+.task-list{gap:9px}
+.task{
+ background:#0f1b2e;border:1px solid #263a57;border-radius:13px;
+ padding:12px 13px;transition:border-color .18s,transform .18s,background .18s;
+}
+.task:hover{border-color:#596b96;background:#14233a;transform:translateY(-1px)}
+.task input[type=checkbox]{width:17px;height:17px;cursor:pointer;accent-color:#70d9b3}
+.task-title{font-size:13px;font-weight:650}
+.task-meta{gap:11px;font-size:11px;color:#91a2bd}
+.priority{width:7px;height:7px}
+.progress-track{height:8px;background:#293a56;margin:12px 0 8px}
+.progress-fill{background:linear-gradient(90deg,#8b83ff,#6bd9ba)}
+.progress-row{font-size:11px;color:#aab8cc}
+.quick-add{gap:10px;margin:17px 0 15px}
+.field{
+ background:#0d192b;border:1px solid #2b3e5b;border-radius:12px;
+ color:#f4f7ff;padding:11px 13px;
+}
+.field::placeholder{color:#72839e}
+.field:focus{border-color:#9c98ff;box-shadow:0 0 0 3px #928cff20}
+.note-box{min-height:190px;line-height:1.75}
+.section-toolbar{margin:7px 0 18px}
+.search{max-width:300px}
+.filter{max-width:175px}
+.task-form{gap:14px}
+.label{font-size:11px;font-weight:650;color:#aab8cc}
+.calendar-day,.setting{
+ background:#0f1b2e;border:1px solid #293d5a;border-radius:15px;padding:16px;
+}
+.calendar-day h3{font-size:13px;color:#b4b0ff;text-transform:capitalize}
+.settings-grid{gap:16px}
+.setting h3{font-size:14px;font-weight:700}
+.setting p{line-height:1.6;color:#9aaac1}
+.note-status{color:#8798b2}
+.empty{border-color:#3a4c68;background:#0e1a2c55;color:#9aaac1;border-radius:14px}
+.toast{
+ background:#1b2c47;border:1px solid #52658a;border-radius:14px;
+ padding:14px 18px;box-shadow:0 18px 55px #02081788;
+}
+.footer{color:#71839f;margin-top:32px}
+.profile{border-color:#263955}
+.avatar{background:linear-gradient(145deg,#a9a5ff,#5fcbbb);color:#10182c}
+body.light{
+ --bg:#f3f5fb;--side:#ffffff;--card:#ffffff;--card2:#f3f5fc;
+ --line:#e1e6f0;--text:#202b43;--muted:#71809a;--accent:#716ee5;
+ --accent2:#716ee5;--shadow:0 18px 50px #25304a13;
+ background:radial-gradient(ellipse at 80% -10%,#8178ef16 0,transparent 40%),#f3f5fb;
+}
+body.light .sidebar{background:#fff;border-right-color:#e5e9f2;box-shadow:8px 0 28px #29395a0a}
+body.light .nav button{color:#6c7890}
+body.light .nav button:hover{background:#f2f3fb;color:#303b55}
+body.light .nav button.active{background:linear-gradient(100deg,#7778ee18,#42b9b012);color:#4945a8;box-shadow:inset 3px 0 #7774e8}
+body.light .stat,body.light .card{background:#fff;border-color:#e5e9f2;box-shadow:0 9px 30px #25304a0a}
+body.light .stat-top,body.light .progress-row{color:#73809a}
+body.light .stat-icon{background:#f0efff;color:#716ee5}
+body.light .task,body.light .calendar-day,body.light .setting{background:#f8f9fd;border-color:#e6eaf2}
+body.light .task:hover{background:#f1f3fc;border-color:#c9c9ed}
+body.light .task-meta,body.light .note-status{color:#78859d}
+body.light .field{background:#fbfcff;border-color:#dfe5ef;color:#25314a}
+body.light .field::placeholder{color:#9aa5b7}
+body.light .date-pill{background:#fff;border-color:#e1e6f0;color:#64728c}
+body.light .btn{background:#f6f7fc;border-color:#e0e5ef;color:#34405a}
+body.light .btn.primary{background:linear-gradient(135deg,#aaa5ff,#7e7be9 58%,#76cdbf);color:#11182f;border:0}
+body.light .btn.subtle{background:transparent}
+body.light .empty{background:#fafbfe;border-color:#dfe5ef;color:#7c899f}
+body.light .calendar-day h3{color:#6864ce}
+body.light .setting p{color:#77849b}
+body.light .toast{background:#fff;color:#24314b;border-color:#dce2ee}
+@media(max-width:850px){
+ .sidebar{background:linear-gradient(180deg,#101d33,#0c1729);border-right:1px solid #34476480}
+ .main{padding-left:24px;padding-right:24px}
+}
+@media(max-width:600px){
+ .sidebar{background:#0d1729f5;backdrop-filter:blur(18px);border-top:1px solid #34476480;box-shadow:0 -8px 30px #02081740}
+ .main{padding:19px 14px 94px}
+ .topbar{margin-bottom:25px}
+ .top-actions{gap:6px}
+ .top-actions .btn{font-size:11px;padding:9px 10px}
+ .welcome h1{font-size:29px}
+ .grid-stats{gap:10px}
+ .stat{padding:14px}
+ .stat strong{font-size:27px}
+ .card{padding:16px;border-radius:17px}
+ .dashboard-grid{gap:12px}
+ .quick-add{gap:7px}
+ .quick-add .btn{padding:10px}
+ body.light .sidebar{background:#ffffffed;backdrop-filter:blur(18px);border-top-color:#e3e7f0}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
 </style>
 </head>
 <body>
@@ -71,10 +242,10 @@ body.light{color-scheme:light;--bg:#f3f5fa;--side:#fff;--card:#fff;--card2:#f1f3
    <div class="setting"><h3>Внешний вид</h3><p>Переключай светлую и тёмную тему.</p><button class="btn" id="themeSetting">Сменить тему</button></div>
    <div class="setting"><h3>Резервная копия</h3><p>Сохрани задачи и заметки в JSON-файл.</p><button class="btn" id="exportBtn">↓ Экспортировать данные</button></div>
    <div class="setting"><h3>Восстановление данных</h3><p>Загрузи ранее сохранённую копию Barnoma.</p><input type="file" id="importFile" accept="application/json" class="field"></div>
-   <div class="setting"><h3>Версия приложения</h3><p>Barnoma 0.3.0 · Локальное хранение в браузере.</p><button class="btn" id="repoBtn">Открыть GitHub ↗</button></div>
+   <div class="setting"><h3>Версия приложения</h3><p>Barnoma 0.3.1 · Локальное хранение в браузере.</p><button class="btn" id="repoBtn">Открыть GitHub ↗</button></div>
   </div>
  </section>
- <footer class="footer">Barnoma · организуй своё пространство · версия 0.3.0</footer>
+ <footer class="footer">Barnoma · организуй своё пространство · версия 0.3.1</footer>
 </main>
 </div><div class="toast" id="toast" role="status"></div>
 <script>
