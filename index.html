@@ -180,6 +180,72 @@ body.light .toast{background:#fff;color:#24314b;border-color:#dce2ee}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
+
+/* Barnoma — red edition */
+:root{
+ --bg:#160d12;--side:#211017;--card:#2a151d;--card2:#3a1b27;
+ --line:#59303d;--text:#fff4f5;--muted:#c09da6;
+ --accent:#ff526b;--accent2:#e52e4d;--green:#72d9ae;
+ --yellow:#f3c46d;--red:#ff8290;--shadow:0 18px 55px #10030988;
+}
+body{
+ background:
+ radial-gradient(ellipse at 78% -10%,#e52e4d38 0,transparent 39%),
+ radial-gradient(ellipse at 8% 38%,#a51e3a20 0,transparent 36%),var(--bg);
+}
+.sidebar{background:linear-gradient(180deg,#28131cfa,#1a0d13fa);border-right-color:#63303f80}
+.logo{background:linear-gradient(145deg,#ff9aa8,#f04460 58%,#b91f3c);color:#fff;box-shadow:0 8px 25px #f0446055,inset 0 1px 0 #ffffff70}
+.nav button:hover{background:#49212f;color:#fff}
+.nav button.active{background:linear-gradient(100deg,#ed345329,#e94b641a);color:#fff;box-shadow:inset 3px 0 #ff647b,0 5px 18px #12050a55}
+.eyebrow{color:#ff7588}
+.btn{background:#3b1d29;border-color:#693444}
+.btn:hover{border-color:#ff7184;background:#512332}
+.btn.primary{color:#fff;background:linear-gradient(135deg,#ff7788,#ed3455 58%,#b91f43);border:0;box-shadow:0 7px 20px #ed345538}
+.btn.primary:hover{filter:brightness(1.08);box-shadow:0 9px 25px #ed345555}
+.date-pill{background:#301923;border-color:#623344;color:#f1cbd2}
+.stat,.card{background:linear-gradient(145deg,#321923ef,#25131cf5);border-color:#59303d}
+.stat:after{background:#ff647b19}
+.stat-icon{background:#f044601f;color:#ff9aa8}
+.task{background:#21121a;border-color:#512b39}
+.task:hover{border-color:#a34b60;background:#301923}
+.progress-track{background:#59303d}
+.progress-fill{background:linear-gradient(90deg,#ef3455,#ff8997)}
+.field{background:#1e1118;border-color:#59303d;color:#fff4f5}
+.field::placeholder{color:#a77c88}
+.field:focus{border-color:#ff7184;box-shadow:0 0 0 3px #ff526b25}
+.calendar-day,.setting{background:#21121a;border-color:#59303d}
+.calendar-day h3{color:#ff8999}
+.empty{border-color:#70404d;background:#1d101755;color:#c09da6}
+.toast{background:#3a1b27;border-color:#8b4355}
+.avatar{background:linear-gradient(145deg,#ff9aa8,#d92e4d);color:#fff}
+body.light{
+ --bg:#fff5f6;--side:#fff;--card:#fff;--card2:#fff0f2;
+ --line:#f0d8de;--text:#35202a;--muted:#896b75;
+ --accent:#d92e4d;--accent2:#c51f40;--shadow:0 18px 50px #6c1c3013;
+ background:radial-gradient(ellipse at 80% -10%,#e94b6418 0,transparent 40%),#fff5f6;
+}
+body.light .sidebar{background:#fff;border-right-color:#f0d8de}
+body.light .nav button{color:#896b75}
+body.light .nav button:hover{background:#fff0f2;color:#512432}
+body.light .nav button.active{background:linear-gradient(100deg,#ed34551a,#e94b6410);color:#b51e3c;box-shadow:inset 3px 0 #d92e4d}
+body.light .stat,body.light .card{background:#fff;border-color:#f0d8de}
+body.light .stat-icon{background:#fff0f2;color:#d92e4d}
+body.light .task,body.light .calendar-day,body.light .setting{background:#fff8f9;border-color:#f0d8de}
+body.light .task:hover{background:#fff0f2;border-color:#e8b7c2}
+body.light .field{background:#fffafb;border-color:#ecd4da;color:#35202a}
+body.light .field::placeholder{color:#ad929b}
+body.light .date-pill{background:#fff;border-color:#f0d8de;color:#896b75}
+body.light .btn{background:#fff1f3;border-color:#f0d8de;color:#512432}
+body.light .btn.primary{background:linear-gradient(135deg,#f77d91,#d92e4d 58%,#b51e3c);color:#fff;border:0}
+body.light .empty{background:#fffafb;border-color:#edcbd3;color:#896b75}
+body.light .calendar-day h3{color:#c32645}
+body.light .toast{background:#fff;color:#35202a;border-color:#f0d8de}
+@media(max-width:850px){.sidebar{background:linear-gradient(180deg,#28131c,#1a0d13);border-right-color:#63303f80}}
+@media(max-width:600px){
+ .sidebar{background:#211017f5;border-top-color:#63303f80}
+ body.light .sidebar{background:#ffffffed;border-top-color:#f0d8de}
+}
+
 </style>
 </head>
 <body>
